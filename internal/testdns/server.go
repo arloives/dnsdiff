@@ -13,11 +13,25 @@ import (
 // Start serves UDP and TCP on one loopback port. The test controls responses.
 func Start(t testing.TB, handler dns.HandlerFunc) string {
 	t.Helper()
-	listener, err := net.Listen("tcp4", "127.0.0.1:0")
+	return start(t, "tcp4", "udp4", "127.0.0.1:0", handler)
+}
+
+// StartIPv6 skips the caller only when IPv6 loopback is unavailable.
+func StartIPv6(t testing.TB, handler dns.HandlerFunc) string {
+	t.Helper()
+	return start(t, "tcp6", "udp6", "[::1]:0", handler)
+}
+
+func start(t testing.TB, tcp, udp, address string, handler dns.HandlerFunc) string {
+	t.Helper()
+	listener, err := net.Listen(tcp, address)
 	if err != nil {
+		if tcp == "tcp6" {
+			t.Skipf("IPv6 loopback unavailable: %v", err)
+		}
 		t.Fatal(err)
 	}
-	packet, err := net.ListenPacket("udp4", listener.Addr().String())
+	packet, err := net.ListenPacket(udp, listener.Addr().String())
 	if err != nil {
 		listener.Close()
 		t.Fatal(err)

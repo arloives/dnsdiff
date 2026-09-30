@@ -294,3 +294,16 @@ func TestPositiveAnswerWithNSAuthority(t *testing.T) {
 		t.Fatalf("positive answer was mistaken for referral: %+v", r)
 	}
 }
+
+func TestIPv6Transport(t *testing.T) {
+	server := testdns.StartIPv6(t, testdns.Reply(0, "example.test. 60 IN AAAA 2001:db8::1"))
+	cfg := config(server)
+	cfg.Type = dns.TypeAAAA
+	for _, tcp := range []bool{false, true} {
+		cfg.TCP = tcp
+		r := Run(context.Background(), cfg)
+		if r.Status != "agree" || len(r.Results[0].Answers) != 1 {
+			t.Fatalf("IPv6 query failed (TCP=%v): %+v", tcp, r)
+		}
+	}
+}
